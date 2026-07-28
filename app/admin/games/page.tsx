@@ -1,8 +1,9 @@
-import PageHeader from "@/components/ui/PageHeader";
+import PageHeader from "@/components/common/PageHeader";
+import SearchInput from "@/components/common/SearchInput";
+
 import Button from "@/components/ui/Button";
-import SearchInput from "@/components/ui/SearchInput";
-import Badge from "@/components/ui/Badge";
 import Card from "@/components/ui/Card";
+import Badge from "@/components/ui/Badge";
 
 import { games } from "@/lib/mock/games";
 
