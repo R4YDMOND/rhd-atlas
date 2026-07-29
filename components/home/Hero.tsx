@@ -7,18 +7,13 @@ export default function Hero() {
       <div
         className="absolute inset-0 bg-cover bg-[65%_center] bg-no-repeat"
         style={{
-          backgroundImage:
-            "url('/images/hero/where-winds-meet-hero.png')",
+          backgroundImage: "url('/images/hero/where-winds-meet-hero.png')",
         }}
       />
 
       {/* Dark cinematic overlay */}
       <div className="absolute inset-0 bg-gradient-to-r from-[#080B0D] via-[#080B0D]/75 to-[#080B0D]/20" />
-
-      {/* Bottom fade */}
       <div className="absolute inset-0 bg-gradient-to-t from-[#080B0D] via-transparent to-[#080B0D]/30" />
-
-      {/* Дополнительная атмосферная дымка */}
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_75%_40%,rgba(47,157,145,0.10),transparent_35%)]" />
 
       {/* Main content */}
@@ -27,25 +22,23 @@ export default function Hero() {
           {/* Eyebrow */}
           <div className="mb-6 flex items-center gap-3">
             <span className="h-px w-12 bg-[#C7A56A]" />
-
             <span className="text-xs font-medium uppercase tracking-[0.35em] text-[#C7A56A]">
-              RHD Hub
+              RHD Atlas
             </span>
           </div>
 
           {/* Heading */}
           <h1 className="max-w-4xl text-5xl font-bold leading-[1.05] tracking-tight text-[#F1EEE7] sm:text-6xl lg:text-8xl">
-            Ваш компас
+            Атлас игровых
             <br />
             <span className="bg-gradient-to-r from-[#E4C88D] via-[#C7A56A] to-[#61C8B7] bg-clip-text text-transparent">
-              в мире игр
+              вселенных
             </span>
           </h1>
 
           {/* Description */}
           <p className="mt-8 max-w-xl text-lg leading-8 text-[#D1D2CE]">
-            Новости, гайды, билды и инструменты для любимых игр.
-            Исследуйте миры, находите знания и создавайте свои истории.
+            Новости, гайды, билды и инструменты для ваших любимых игр. Исследуйте миры, находите знания и создавайте свои истории вместе с сообществом.
           </p>
 
           {/* Buttons */}
@@ -55,7 +48,6 @@ export default function Hero() {
               className="group flex items-center gap-3 rounded-xl bg-gradient-to-r from-[#C7A56A] to-[#E4C88D] px-6 py-3.5 text-sm font-semibold text-[#080B0D] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_0_30px_rgba(199,165,106,0.25)]"
             >
               Исследовать мир
-
               <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
             </a>
 
@@ -64,7 +56,6 @@ export default function Hero() {
               className="flex items-center gap-3 rounded-xl border border-white/15 bg-black/20 px-6 py-3.5 text-sm font-semibold text-[#F1EEE7] backdrop-blur-md transition-all duration-300 hover:border-[#2F9D91]/60 hover:bg-black/35"
             >
               <BookOpen className="h-4 w-4 text-[#61C8B7]" />
-
               Смотреть гайды
             </a>
           </div>
@@ -72,18 +63,16 @@ export default function Hero() {
           {/* Games */}
           <div className="mt-16 flex flex-wrap items-center gap-6 border-t border-white/10 pt-6">
             <span className="text-xs uppercase tracking-[0.2em] text-[#9B9D9A]">
-              Доступные игры
+              Доступные проекты
             </span>
 
             <div className="flex flex-wrap gap-3">
               <span className="rounded-full border border-[#C7A56A]/40 bg-black/20 px-4 py-2 text-xs text-[#E4C88D] backdrop-blur-sm">
                 Where Winds Meet
               </span>
-
               <span className="rounded-full border border-white/15 bg-black/20 px-4 py-2 text-xs text-[#D1D2CE] backdrop-blur-sm">
                 Once Human
               </span>
-
               <span className="rounded-full border border-white/15 bg-black/20 px-4 py-2 text-xs text-[#D1D2CE] backdrop-blur-sm">
                 The Cube
               </span>

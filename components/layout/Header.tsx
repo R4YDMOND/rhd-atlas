@@ -13,7 +13,6 @@ const navigation = [
   { label: "О проекте", href: "/about" },
 ];
 
-// Убрали "/tools/map" и "/tools/calculator" из основного массива
 const games = [
   { label: "Where Winds Meet", href: "/games/where-winds-meet" },
   { label: "Once Human", href: "/games/once-human" },
@@ -38,7 +37,7 @@ export default function Header() {
         <a href="/" className="group flex items-center gap-3">
           <Image
             src="/branding/atlas-logo.png"
-            alt="RHD ATLAS"
+            alt="RHD Atlas"
             width={120}
             height={40}
             className="h-auto w-auto"
@@ -46,7 +45,7 @@ export default function Header() {
           />
           <div className="hidden sm:block">
             <div className="text-[9px] uppercase tracking-[0.28em] text-[#9B9D9A]">
-              Мир. Знания. Сообщество.
+              Атлас игровых миров
             </div>
           </div>
         </a>
@@ -63,7 +62,7 @@ export default function Header() {
             </a>
           ))}
 
-          {/* Tools dropdown (Выпадающее меню инструментов) */}
+          {/* Tools dropdown */}
           <div className="relative">
             <button
               onClick={() => {
@@ -130,22 +129,13 @@ export default function Header() {
 
         {/* Social links */}
         <div className="hidden items-center gap-2 lg:flex">
-          <a
-            href="#"
-            className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]"
-          >
+          <a href="#" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">
             VK
           </a>
-          <a
-            href="#"
-            className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]"
-          >
+          <a href="#" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">
             MAX
           </a>
-          <a
-            href="#"
-            className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]"
-          >
+          <a href="#" className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">
             Lolka
             <ExternalLink className="h-3 w-3" />
           </a>
@@ -157,11 +147,7 @@ export default function Header() {
           className="rounded-lg border border-white/10 p-2 text-[#F1EEE7] xl:hidden"
           aria-label="Открыть меню"
         >
-          {isMobileMenuOpen ? (
-            <X className="h-5 w-5" />
-          ) : (
-            <Menu className="h-5 w-5" />
-          )}
+          {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </button>
       </div>
 
@@ -170,33 +156,19 @@ export default function Header() {
         <div className="border-t border-white/10 bg-[#080B0D] px-6 py-4 xl:hidden">
           <nav className="flex flex-col gap-1">
             {navigation.map((item) => (
-              <a
-                key={item.label}
-                href={item.href}
-                className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]"
-              >
+              <a key={item.label} href={item.href} className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]">
                 {item.label}
               </a>
             ))}
-            
             <div className="mt-2 mb-1 text-[10px] uppercase tracking-wider text-[#9B9D9A]/60">Инструменты</div>
             {tools.map((tool) => (
-              <a
-                key={tool.label}
-                href={tool.href}
-                className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]"
-              >
+              <a key={tool.label} href={tool.href} className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]">
                 {tool.label}
               </a>
             ))}
-
             <div className="mt-2 mb-1 text-[10px] uppercase tracking-wider text-[#9B9D9A]/60">Игры</div>
             {games.map((game) => (
-              <a
-                key={game.label}
-                href={game.href}
-                className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]"
-              >
+              <a key={game.label} href={game.href} className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]">
                 {game.label}
               </a>
             ))}
