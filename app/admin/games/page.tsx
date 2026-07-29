@@ -1,9 +1,9 @@
 import PageHeader from "@/components/common/PageHeader";
 import SearchInput from "@/components/common/SearchInput";
 
-import Button from "@/components/ui/Button";
-import Card from "@/components/ui/Card";
-import Badge from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
 
 import { games } from "@/lib/mock/games";
 
@@ -82,7 +82,9 @@ export default function GamesPage() {
 
                   <td>
 
-                    <Badge status={game.status as any} />
+                    <Badge variant={game.status === "active" ? "default" : "secondary"}>
+                      {game.status === "active" ? "Активна" : "Бета"}
+                    </Badge>
 
                   </td>
 
@@ -94,7 +96,7 @@ export default function GamesPage() {
                         <Pencil size={16} />
                       </Button>
 
-                      <Button variant="danger">
+                      <Button variant="destructive">
                         <Trash2 size={16} />
                       </Button>
 
