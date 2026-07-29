@@ -1,7 +1,10 @@
+// components/layout/Header.tsx
+
 "use client";
 
 import { ChevronDown, ExternalLink, Menu, X } from "lucide-react";
 import { useState } from "react";
+import Image from "next/image";
 
 const navigation = [
   { label: "Главная", href: "/" },
@@ -31,17 +34,15 @@ export default function Header() {
         
         {/* Logo */}
         <a href="/" className="group flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-full border border-[#C7A56A]/60 bg-gradient-to-br from-[#C7A56A] via-[#E4C88D] to-[#2F9D91]">
-            <span className="font-serif text-xl font-bold text-[#080B0D]">
-              R
-            </span>
-          </div>
-
+          <Image
+            src="/branding/atlas-logo.png"
+            alt="RHD ATLAS"
+            width={120}
+            height={40}
+            className="h-auto w-auto"
+            priority
+          />
           <div className="hidden sm:block">
-            <div className="text-xl font-bold tracking-[0.18em] text-[#F1EEE7]">
-              RHD<span className="text-[#2F9D91]">HUB</span>
-            </div>
-
             <div className="text-[9px] uppercase tracking-[0.28em] text-[#9B9D9A]">
               Мир. Знания. Сообщество.
             </div>
