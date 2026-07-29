@@ -72,7 +72,7 @@ export default function Hero() {
           {/* Games */}
           <div className="mt-16 flex flex-wrap items-center gap-6 border-t border-white/10 pt-6">
             <span className="text-xs uppercase tracking-[0.2em] text-[#9B9D9A]">
-              Исследуйте миры
+              Доступные игры
             </span>
 
             <div className="flex flex-wrap gap-3">

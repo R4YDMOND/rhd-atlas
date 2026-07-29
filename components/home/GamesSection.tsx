@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Download, Info } from "lucide-react";
 
 const games = [
   {
@@ -10,6 +10,8 @@ const games = [
     description: "Откройте мир древнего Китая и искусства боевых искусств.",
     image: "/images/games/where-winds-meet.png",
     href: "/games/where-winds-meet",
+    playLink: "https://adl.easebar.com/d/g/wwm/c/officialwebsite?type=pc",
+    playLabel: "Скачать лаунчер",
     accent: "from-[#C7A56A]/80",
   },
   {
@@ -17,6 +19,8 @@ const games = [
     description: "Выживание, исследование и борьба за будущее человечества.",
     image: "/images/games/once-human.png",
     href: "/games/once-human",
+    playLink: "https://adl.easebar.com/d/g/oncehuman/c/gwpc",
+    playLabel: "Скачать лаунчер",
     accent: "from-[#789B91]/80",
   },
   {
@@ -24,6 +28,8 @@ const games = [
     description: "Исследуйте неизвестное и раскройте тайны загадочного мира.",
     image: "/images/games/the-cube.png",
     href: "/games/the-cube",
+    playLink: "https://store.steampowered.com/app/3230430/The_CUBE/?l=russian",
+    playLabel: "Страница в Steam",
     accent: "from-[#65747A]/80",
   },
 ];
@@ -35,31 +41,30 @@ export default function GamesSection() {
         <div className="mb-10 flex items-end justify-between gap-6">
           <div>
             <p className="mb-3 text-xs uppercase tracking-[0.3em] text-[#C7A56A]">
-              Explore worlds
+              Play now
             </p>
 
             <h2 className="text-3xl font-semibold text-[#F1EEE7] sm:text-4xl">
-              Исследуйте миры
+              Играть сейчас
             </h2>
           </div>
 
           <span className="hidden text-sm text-[#9B9D9A] sm:block">
-            Выберите свою вселенную
+            Официальные источники
           </span>
         </div>
 
         <div className="grid gap-5 lg:grid-cols-3">
           {games.map((game) => (
-            <Link
+            <div
               key={game.title}
-              href={game.href}
-              className="group relative min-h-[420px] overflow-hidden rounded-3xl border border-white/10 bg-[#101518]"
+              className="group relative flex min-h-[420px] flex-col justify-end overflow-hidden rounded-3xl border border-white/10 bg-[#101518]"
             >
               <Image
                 src={game.image}
                 alt={game.title}
                 fill
-                sizes="(max-width: 1024px) 100vw, 33vw" // Добавлен атрибут sizes для оптимизации Next.js
+                sizes="(max-width: 1024px) 100vw, 33vw"
                 className="object-cover transition duration-700 group-hover:scale-105"
               />
 
@@ -74,17 +79,36 @@ export default function GamesSection() {
                   <h3 className="text-2xl font-semibold text-[#F1EEE7]">
                     {game.title}
                   </h3>
-
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/20 backdrop-blur-md transition group-hover:border-[#C7A56A]/60">
-                    <ArrowUpRight className="h-4 w-4" />
-                  </span>
                 </div>
 
-                <p className="max-w-sm text-sm leading-6 text-[#D1D2CE]">
+                <p className="mb-6 max-w-sm text-sm leading-6 text-[#D1D2CE]">
                   {game.description}
                 </p>
+
+                {/* Кнопки действий */}
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* Кнопка скачивания (внешняя) */}
+                  <a
+                    href={game.playLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#C7A56A] to-[#E4C88D] px-4 py-2.5 text-xs font-semibold text-[#080B0D] transition-all duration-300 hover:scale-[1.02]"
+                  >
+                    <Download className="h-4 w-4" />
+                    {game.playLabel}
+                  </a>
+
+                  {/* Кнопка на наш портал (внутренняя) */}
+                  <Link
+                    href={game.href}
+                    className="flex items-center gap-2 rounded-xl border border-white/15 bg-black/20 px-4 py-2.5 text-xs font-semibold text-[#F1EEE7] backdrop-blur-md transition-all duration-300 hover:border-[#2F9D91]/60"
+                  >
+                    <Info className="h-4 w-4 text-[#61C8B7]" />
+                    Гайды и билды
+                  </Link>
+                </div>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       </div>

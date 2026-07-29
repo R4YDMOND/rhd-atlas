@@ -1,3 +1,5 @@
+// app/page.tsx
+
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
@@ -17,20 +19,23 @@ export default function Home() {
 
       <main>
         <Hero />
+        
+        <div className="mx-auto max-w-[1600px] px-6 lg:px-10">
+          {/* Быстрый доступ немного перекрывает Hero */}
+          <div className="relative z-20 -mt-10 mb-20">
+            <QuickAccess />
+          </div>
 
-        <QuickAccess />
-
-        <NewsSection />
-
-        <GuidesSection />
-
-        <ToolsSection />
-
-        <GamesSection />
-
-        <VideoSection />
-
-        <UpdatesSection />
+          {/* Воздушные отступы между секциями */}
+          <div className="space-y-24 pb-24">
+            <NewsSection />
+            <GuidesSection />
+            <ToolsSection />
+            <GamesSection />
+            <VideoSection />
+            <UpdatesSection />
+          </div>
+        </div>
       </main>
 
       <Footer />
