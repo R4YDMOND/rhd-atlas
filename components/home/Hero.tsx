@@ -59,25 +59,6 @@ export default function Hero() {
               Смотреть гайды
             </a>
           </div>
-
-          {/* Games */}
-          <div className="mt-16 flex flex-wrap items-center gap-6 border-t border-white/10 pt-6">
-            <span className="text-xs uppercase tracking-[0.2em] text-[#9B9D9A]">
-              Доступные проекты
-            </span>
-
-            <div className="flex flex-wrap gap-3">
-              <span className="rounded-full border border-[#C7A56A]/40 bg-black/20 px-4 py-2 text-xs text-[#E4C88D] backdrop-blur-sm">
-                Where Winds Meet
-              </span>
-              <span className="rounded-full border border-white/15 bg-black/20 px-4 py-2 text-xs text-[#D1D2CE] backdrop-blur-sm">
-                Once Human
-              </span>
-              <span className="rounded-full border border-white/15 bg-black/20 px-4 py-2 text-xs text-[#D1D2CE] backdrop-blur-sm">
-                The Cube
-              </span>
-            </div>
-          </div>
         </div>
       </div>
     </section>

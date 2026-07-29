@@ -4,7 +4,6 @@ import Hero from "@/components/home/Hero";
 import QuickAccess from "@/components/home/QuickAccess";
 import NewsSection from "@/components/home/NewsSection";
 import GuidesSection from "@/components/home/GuidesSection";
-import ToolsSection from "@/components/home/ToolsSection";
 import GamesSection from "@/components/home/GamesSection";
 import VideoSection from "@/components/home/VideoSection";
 import UpdatesSection from "@/components/home/UpdatesSection";
@@ -24,8 +23,10 @@ export default function Home() {
         <div className="space-y-24 pb-24">
           <NewsSection />
           <GuidesSection />
-          <ToolsSection />
+          
+          {/* Блок Играть сейчас (ссылки на магазины) */}
           <GamesSection />
+          
           <VideoSection />
           <UpdatesSection />
         </div>

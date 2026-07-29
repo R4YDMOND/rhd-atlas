@@ -10,7 +10,6 @@ const navigation = [
   { label: "Гайды", href: "/guides" },
   { label: "Билды", href: "/builds" },
   { label: "Видео", href: "/video" },
-  { label: "О проекте", href: "/about" },
 ];
 
 const games = [
@@ -72,21 +71,13 @@ export default function Header() {
               className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
             >
               Инструменты
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${
-                  isToolsOpen ? "rotate-180" : ""
-                }`}
-              />
+              <ChevronDown className={`h-4 w-4 transition-transform ${isToolsOpen ? "rotate-180" : ""}`} />
             </button>
 
             {isToolsOpen && (
               <div className="absolute right-0 top-12 w-56 rounded-xl border border-white/10 bg-[#111619] p-2 shadow-2xl">
                 {tools.map((tool) => (
-                  <a
-                    key={tool.label}
-                    href={tool.href}
-                    className="block rounded-lg px-3 py-3 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
-                  >
+                  <a key={tool.label} href={tool.href} className="block rounded-lg px-3 py-3 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]">
                     {tool.label}
                   </a>
                 ))}
@@ -104,21 +95,13 @@ export default function Header() {
               className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
             >
               Игры
-              <ChevronDown
-                className={`h-4 w-4 transition-transform ${
-                  isGamesOpen ? "rotate-180" : ""
-                }`}
-              />
+              <ChevronDown className={`h-4 w-4 transition-transform ${isGamesOpen ? "rotate-180" : ""}`} />
             </button>
 
             {isGamesOpen && (
               <div className="absolute right-0 top-12 w-56 rounded-xl border border-white/10 bg-[#111619] p-2 shadow-2xl">
                 {games.map((game) => (
-                  <a
-                    key={game.label}
-                    href={game.href}
-                    className="block rounded-lg px-3 py-3 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
-                  >
+                  <a key={game.label} href={game.href} className="block rounded-lg px-3 py-3 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]">
                     {game.label}
                   </a>
                 ))}
@@ -129,13 +112,9 @@ export default function Header() {
 
         {/* Social links */}
         <div className="hidden items-center gap-2 lg:flex">
-          <a href="#" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">
-            VK
-          </a>
-          <a href="#" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">
-            MAX
-          </a>
-          <a href="#" className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">
+          <a href="#" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">VK</a>
+          <a href="#" className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">MAX</a>
+          <a href="https://lolka.gg/JkbbNyX5l" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]">
             Lolka
             <ExternalLink className="h-3 w-3" />
           </a>
