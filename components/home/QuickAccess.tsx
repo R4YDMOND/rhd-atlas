@@ -1,3 +1,6 @@
+// components/home/QuickAccess.tsx
+
+import Link from "next/link";
 import {
   BookOpen,
   Calculator,
@@ -13,42 +16,54 @@ const quickAccessItems = [
     description: "Будьте в курсе последних событий",
     icon: FileText,
     href: "/news",
-    accent: "gold",
+    glow: "bg-[#C7A56A]/10",
+    iconWrapper: "border-[#C7A56A]/30 bg-[#C7A56A]/10 text-[#E4C88D]",
+    line: "bg-[#C7A56A]",
   },
   {
     title: "Гайды",
     description: "Подробные руководства по играм",
     icon: BookOpen,
     href: "/guides",
-    accent: "jade",
+    glow: "bg-[#2F9D91]/10",
+    iconWrapper: "border-[#2F9D91]/30 bg-[#2F9D91]/10 text-[#61C8B7]",
+    line: "bg-[#2F9D91]",
   },
   {
     title: "Интерактивная карта",
     description: "Исследуйте миры и находите секреты",
     icon: Map,
     href: "/tools/map",
-    accent: "gold",
+    glow: "bg-[#C7A56A]/10",
+    iconWrapper: "border-[#C7A56A]/30 bg-[#C7A56A]/10 text-[#E4C88D]",
+    line: "bg-[#C7A56A]",
   },
   {
     title: "Калькулятор",
     description: "Оптимизируйте своего персонажа",
     icon: Calculator,
     href: "/tools/calculator",
-    accent: "jade",
+    glow: "bg-[#2F9D91]/10",
+    iconWrapper: "border-[#2F9D91]/30 bg-[#2F9D91]/10 text-[#61C8B7]",
+    line: "bg-[#2F9D91]",
   },
   {
     title: "Билды",
     description: "Лучшие сборки от сообщества",
     icon: Crosshair,
     href: "/builds",
-    accent: "gold",
+    glow: "bg-[#C7A56A]/10",
+    iconWrapper: "border-[#C7A56A]/30 bg-[#C7A56A]/10 text-[#E4C88D]",
+    line: "bg-[#C7A56A]",
   },
   {
     title: "Видео",
     description: "Обзоры, гайды и прохождения",
     icon: Play,
     href: "/video",
-    accent: "jade",
+    glow: "bg-[#2F9D91]/10",
+    iconWrapper: "border-[#2F9D91]/30 bg-[#2F9D91]/10 text-[#61C8B7]",
+    line: "bg-[#2F9D91]",
   },
 ];
 
@@ -59,30 +74,20 @@ export default function QuickAccess() {
         {quickAccessItems.map((item) => {
           const Icon = item.icon;
 
-          const isGold = item.accent === "gold";
-
           return (
-            <a
+            <Link
               key={item.title}
               href={item.href}
               className="group relative overflow-hidden rounded-2xl border border-white/10 bg-[#101518]/95 p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-[#C7A56A]/40 hover:bg-[#151C20]"
             >
               {/* Glow */}
               <div
-                className={`absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-300 group-hover:opacity-100 ${
-                  isGold
-                    ? "bg-[#C7A56A]/10"
-                    : "bg-[#2F9D91]/10"
-                }`}
+                className={`absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-300 group-hover:opacity-100 ${item.glow}`}
               />
 
               <div className="relative">
                 <div
-                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl border ${
-                    isGold
-                      ? "border-[#C7A56A]/30 bg-[#C7A56A]/10 text-[#E4C88D]"
-                      : "border-[#2F9D91]/30 bg-[#2F9D91]/10 text-[#61C8B7]"
-                  }`}
+                  className={`mb-5 flex h-12 w-12 items-center justify-center rounded-xl border ${item.iconWrapper}`}
                 >
                   <Icon className="h-6 w-6" strokeWidth={1.5} />
                 </div>
@@ -96,12 +101,10 @@ export default function QuickAccess() {
                 </p>
 
                 <div
-                  className={`mt-4 h-px w-0 transition-all duration-300 group-hover:w-full ${
-                    isGold ? "bg-[#C7A56A]" : "bg-[#2F9D91]"
-                  }`}
+                  className={`mt-4 h-px w-0 transition-all duration-300 group-hover:w-full ${item.line}`}
                 />
               </div>
-            </a>
+            </Link>
           );
         })}
       </div>

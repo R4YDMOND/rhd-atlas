@@ -1,3 +1,5 @@
+// components/home/GamesSection.tsx
+
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
@@ -57,6 +59,7 @@ export default function GamesSection() {
                 src={game.image}
                 alt={game.title}
                 fill
+                sizes="(max-width: 1024px) 100vw, 33vw" // Добавлен атрибут sizes для оптимизации Next.js
                 className="object-cover transition duration-700 group-hover:scale-105"
               />
 

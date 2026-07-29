@@ -1,5 +1,3 @@
-// components/layout/Header.tsx
-
 "use client";
 
 import { ChevronDown, ExternalLink, Menu, X } from "lucide-react";
@@ -10,23 +8,27 @@ const navigation = [
   { label: "Главная", href: "/" },
   { label: "Новости", href: "/news" },
   { label: "Гайды", href: "/guides" },
-  { label: "Карта", href: "/tools/map" },
-  { label: "Калькулятор", href: "/tools/calculator" },
   { label: "Билды", href: "/builds" },
   { label: "Видео", href: "/video" },
-  { label: "Игры", href: "/games" },
   { label: "О проекте", href: "/about" },
 ];
 
+// Убрали "/tools/map" и "/tools/calculator" из основного массива
 const games = [
-  "Where Winds Meet",
-  "Once Human",
-  "The Cube",
+  { label: "Where Winds Meet", href: "/games/where-winds-meet" },
+  { label: "Once Human", href: "/games/once-human" },
+  { label: "The Cube", href: "/games/the-cube" },
+];
+
+const tools = [
+  { label: "Интерактивная карта", href: "/tools/map" },
+  { label: "Калькулятор билдов", href: "/tools/calculator" },
 ];
 
 export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isGamesOpen, setIsGamesOpen] = useState(false);
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
 
   return (
     <header className="fixed inset-x-0 top-0 z-50 border-b border-white/10 bg-[#080B0D]/90 backdrop-blur-xl">
@@ -61,10 +63,45 @@ export default function Header() {
             </a>
           ))}
 
+          {/* Tools dropdown (Выпадающее меню инструментов) */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsToolsOpen(!isToolsOpen);
+                setIsGamesOpen(false);
+              }}
+              className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
+            >
+              Инструменты
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${
+                  isToolsOpen ? "rotate-180" : ""
+                }`}
+              />
+            </button>
+
+            {isToolsOpen && (
+              <div className="absolute right-0 top-12 w-56 rounded-xl border border-white/10 bg-[#111619] p-2 shadow-2xl">
+                {tools.map((tool) => (
+                  <a
+                    key={tool.label}
+                    href={tool.href}
+                    className="block rounded-lg px-3 py-3 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
+                  >
+                    {tool.label}
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+
           {/* Games dropdown */}
           <div className="relative">
             <button
-              onClick={() => setIsGamesOpen(!isGamesOpen)}
+              onClick={() => {
+                setIsGamesOpen(!isGamesOpen);
+                setIsToolsOpen(false);
+              }}
               className="flex items-center gap-1 rounded-lg px-3 py-2 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
             >
               Игры
@@ -79,11 +116,11 @@ export default function Header() {
               <div className="absolute right-0 top-12 w-56 rounded-xl border border-white/10 bg-[#111619] p-2 shadow-2xl">
                 {games.map((game) => (
                   <a
-                    key={game}
-                    href="#"
+                    key={game.label}
+                    href={game.href}
                     className="block rounded-lg px-3 py-3 text-sm text-[#9B9D9A] transition-colors hover:bg-white/5 hover:text-[#F1EEE7]"
                   >
-                    {game}
+                    {game.label}
                   </a>
                 ))}
               </div>
@@ -99,14 +136,12 @@ export default function Header() {
           >
             VK
           </a>
-
           <a
             href="#"
             className="rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]"
           >
             MAX
           </a>
-
           <a
             href="#"
             className="flex items-center gap-1 rounded-lg border border-white/10 px-3 py-2 text-xs text-[#9B9D9A] transition hover:border-[#C7A56A]/50 hover:text-[#F1EEE7]"
@@ -141,6 +176,28 @@ export default function Header() {
                 className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]"
               >
                 {item.label}
+              </a>
+            ))}
+            
+            <div className="mt-2 mb-1 text-[10px] uppercase tracking-wider text-[#9B9D9A]/60">Инструменты</div>
+            {tools.map((tool) => (
+              <a
+                key={tool.label}
+                href={tool.href}
+                className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]"
+              >
+                {tool.label}
+              </a>
+            ))}
+
+            <div className="mt-2 mb-1 text-[10px] uppercase tracking-wider text-[#9B9D9A]/60">Игры</div>
+            {games.map((game) => (
+              <a
+                key={game.label}
+                href={game.href}
+                className="rounded-lg px-3 py-3 text-sm text-[#9B9D9A] hover:bg-white/5 hover:text-[#F1EEE7]"
+              >
+                {game.label}
               </a>
             ))}
           </nav>
