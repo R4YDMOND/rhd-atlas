@@ -179,7 +179,7 @@ function ContentTypeView({ kind }: { kind: ArticleKind }) {
       style: (record.style ?? 'PVE') as string,
       role: (record.role ?? '') as string,
     });
-    setBlocks((record.body as Block[]) ?? []);
+    setBlocks((record.body as unknown as Block[]) ?? []);
     setSlugTouched(true);
     setView('edit');
   };
@@ -280,7 +280,7 @@ function ContentTypeView({ kind }: { kind: ArticleKind }) {
         accessorKey: 'updatedAt',
         header: ({ column }) => <DataTableColumnHeader column={column} title="Обновлено" />,
         cell: ({ row }) =>
-          new Date((row.original as { updatedAt: string }).updatedAt).toLocaleDateString('ru-RU'),
+          new Date((row.original as { updatedAt: string | Date }).updatedAt).toLocaleDateString('ru-RU'),
       },
       {
         id: 'actions',
