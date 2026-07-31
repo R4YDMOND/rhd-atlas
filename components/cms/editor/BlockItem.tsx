@@ -28,7 +28,7 @@ interface BlockItemProps {
   block: Block;
   index: number;
   total: number;
-  onUpdate: (id: string, data: Partial<Block['data']>) => void;
+  onUpdate: (id: string, data: Record<string, unknown>) => void;
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => void;
   onMove: (id: string, direction: 'up' | 'down') => void;

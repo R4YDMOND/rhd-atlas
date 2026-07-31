@@ -19,8 +19,9 @@ import {
 const menu = [
   { name: "Панель управления", href: "/admin/dashboard", icon: LayoutDashboard },
   { name: "Игры", href: "/admin/games", icon: Gamepad2 },
-  { name: "Новости", href: "/admin/news", icon: Newspaper },
-  { name: "Гайды", href: "/admin/guides", icon: BookOpen },
+  { name: "Новости", href: "/admin/content?type=news", icon: Newspaper },
+  { name: "Гайды", href: "/admin/content?type=guides", icon: BookOpen },
+  { name: "Билды", href: "/admin/content?type=builds", icon: Swords },
   { name: "Оружие", href: "/admin/weapons", icon: Swords },
   { name: "Экипировка", href: "/admin/equipment", icon: Shield },
   { name: "Навыки", href: "/admin/skills", icon: ScrollText },

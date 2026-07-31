@@ -13,20 +13,28 @@ interface BlockEditorProps {
 function createBlock(type: BlockType, order: number): Block {
   const id = crypto.randomUUID();
 
-  const defaults: Record<BlockType, Block> = {
-    text: { id, type: 'text', order, data: { content: '', alignment: 'left' } },
-    heading: { id, type: 'heading', order, data: { content: '', level: 2 } },
-    image: { id, type: 'image', order, data: { src: '', alt: '', caption: '', width: 'full' } },
-    video: { id, type: 'video', order, data: { provider: 'vk', videoId: '', caption: '' } },
-    quote: { id, type: 'quote', order, data: { content: '', author: '', source: '' } },
-    list: { id, type: 'list', order, data: { items: [''], ordered: false } },
-    table: { id, type: 'table', order, data: { headers: [''], rows: [] } },
-    calculator: { id, type: 'calculator', order, data: { game: 'wwm', configId: '', title: '' } },
-    map: { id, type: 'map', order, data: { game: 'wwm', title: '', showFilters: true } },
-    divider: { id, type: 'divider', order, data: {} },
-  };
-
-  return defaults[type];
+  switch (type) {
+    case 'text':
+      return { id, type: 'text', order, data: { content: '', alignment: 'left' } };
+    case 'heading':
+      return { id, type: 'heading', order, data: { content: '', level: 2 } };
+    case 'image':
+      return { id, type: 'image', order, data: { src: '', alt: '', caption: '', width: 'full' } };
+    case 'video':
+      return { id, type: 'video', order, data: { provider: 'vk', videoId: '', caption: '' } };
+    case 'quote':
+      return { id, type: 'quote', order, data: { content: '', author: '', source: '' } };
+    case 'list':
+      return { id, type: 'list', order, data: { items: [''], ordered: false } };
+    case 'table':
+      return { id, type: 'table', order, data: { headers: [''], rows: [] } };
+    case 'calculator':
+      return { id, type: 'calculator', order, data: { game: 'wwm', configId: '', title: '' } };
+    case 'map':
+      return { id, type: 'map', order, data: { game: 'wwm', title: '', showFilters: true } };
+    case 'divider':
+      return { id, type: 'divider', order, data: {} };
+  }
 }
 
 export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
@@ -39,10 +47,10 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
   );
 
   const updateBlock = useCallback(
-    (id: string, data: Partial<Block['data']>) => {
+    (id: string, data: Record<string, unknown>) => {
       onChange(
         blocks.map((b) =>
-          b.id === id ? { ...b, data: { ...b.data, ...data } } : b
+          b.id === id ? ({ ...b, data: { ...b.data, ...data } } as Block) : b
         )
       );
     },

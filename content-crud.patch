@@ -1,0 +1,1512 @@
+diff --git a/app/admin/content/page.tsx b/app/admin/content/page.tsx
+index d46d9e9..26ecadc 100644
+--- a/app/admin/content/page.tsx
++++ b/app/admin/content/page.tsx
+@@ -1,104 +1,507 @@
+ 'use client';
+ 
+-import { useState } from 'react';
++import { Suspense, useCallback, useEffect, useMemo, useState } from 'react';
++import Link from 'next/link';
++import { useSearchParams } from 'next/navigation';
++import { toast } from 'sonner';
++import type { ColumnDef } from '@tanstack/react-table';
++import { ArrowLeft, Eye, Pencil, Plus, Save, Trash2 } from 'lucide-react';
++
+ import { DataTable } from '@/components/data-table/DataTable';
++import { DataTableColumnHeader } from '@/components/data-table/DataTableColumnHeader';
++import { DeleteDialog } from '@/components/cms/dialogs/DeleteDialog';
+ import { BlockEditor } from '@/components/cms/editor/BlockEditor';
+ import { BlockRenderer } from '@/components/cms/blocks/BlockRenderer';
+ import { Button } from '@/components/ui/Button';
+ import { Input } from '@/components/ui/input';
+-import { ArrowLeft, Save, Eye } from 'lucide-react';
++import { Textarea } from '@/components/ui/textarea';
++import { Badge } from '@/components/ui/Badge';
++import PageHeader from '@/components/common/PageHeader';
++import {
++  Select,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from '@/components/ui/select';
++import { cn } from '@/lib/utils';
+ import type { Block } from '@/lib/types/block';
+-import type { Article } from '@/lib/types/article';
++import type { Article, ArticleKind, ContentStatus, Difficulty } from '@/lib/types/article';
++
++type Game = { id: string; title: string; slug: string };
++
++const KIND_CONFIG: Record<ArticleKind, { label: string; endpoint: string; createLabel: string }> = {
++  news: { label: 'Новости', endpoint: '/api/news', createLabel: 'Создать новость' },
++  guides: { label: 'Гайды', endpoint: '/api/guides', createLabel: 'Создать гайд' },
++  builds: { label: 'Билды', endpoint: '/api/builds', createLabel: 'Создать билд' },
++};
++
++const STATUS_OPTIONS: { value: ContentStatus; label: string }[] = [
++  { value: 'DRAFT', label: 'Черновик' },
++  { value: 'PUBLISHED', label: 'Опубликовано' },
++  { value: 'ARCHIVED', label: 'Архив' },
++];
++
++const DIFFICULTY_OPTIONS: { value: Difficulty; label: string }[] = [
++  { value: 'BEGINNER', label: 'Новичок' },
++  { value: 'INTERMEDIATE', label: 'Средний' },
++  { value: 'ADVANCED', label: 'Продвинутый' },
++];
++
++const BUILD_STYLE_OPTIONS = [
++  { value: 'PVE', label: 'PvE' },
++  { value: 'PVP', label: 'PvP' },
++  { value: 'HYBRID', label: 'Гибрид' },
++];
++
++function statusVariant(status: ContentStatus) {
++  if (status === 'PUBLISHED') return 'default' as const;
++  if (status === 'ARCHIVED') return 'destructive' as const;
++  return 'secondary' as const;
++}
++
++function slugify(value: string) {
++  return value
++    .trim()
++    .toLowerCase()
++    .replace(/[^a-z0-9а-яё\s-]/gi, '')
++    .replace(/[\s_]+/g, '-')
++    .replace(/^-+|-+$/g, '');
++}
+ 
+ type View = 'list' | 'edit' | 'preview';
+ 
+-export default function ContentAdminPage() {
++type FormState = {
++  id?: string;
++  title: string;
++  slug: string;
++  excerpt: string; // используется как excerpt (news/guides) либо description (builds)
++  status: ContentStatus;
++  gameId: string;
++  difficulty: Difficulty;
++  version: string; // guides
++  weapon: string; // builds
++  style: string; // builds
++  role: string; // builds
++};
++
++const EMPTY_FORM: FormState = {
++  title: '',
++  slug: '',
++  excerpt: '',
++  status: 'DRAFT',
++  gameId: '',
++  difficulty: 'BEGINNER',
++  version: '',
++  weapon: '',
++  style: 'PVE',
++  role: '',
++};
++
++function ContentTypeView({ kind }: { kind: ArticleKind }) {
++  const config = KIND_CONFIG[kind] ?? KIND_CONFIG.news;
++
+   const [view, setView] = useState<View>('list');
+-  const [editingItem, setEditingItem] = useState<Article | null>(null);
++  const [items, setItems] = useState<Article[]>([]);
++  const [games, setGames] = useState<Game[]>([]);
++  const [isLoading, setIsLoading] = useState(true);
++  const [isSaving, setIsSaving] = useState(false);
++  const [deleteTarget, setDeleteTarget] = useState<Article | null>(null);
++  const [isDeleting, setIsDeleting] = useState(false);
++
++  const [form, setForm] = useState<FormState>(EMPTY_FORM);
++  const [slugTouched, setSlugTouched] = useState(false);
+   const [blocks, setBlocks] = useState<Block[]>([]);
+-  const [title, setTitle] = useState('');
+-  const [slug, setSlug] = useState('');
+ 
+-  const handleEdit = (item: Article) => {
+-    setEditingItem(item);
+-    setTitle(item.title);
+-    setSlug(item.slug);
+-    setBlocks(item.content?.blocks ?? []);
+-    setView('edit');
++  const loadItems = useCallback(async () => {
++    try {
++      const res = await fetch(config.endpoint);
++      if (!res.ok) throw new Error('Не удалось загрузить список');
++      setItems(await res.json());
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Ошибка загрузки');
++    } finally {
++      setIsLoading(false);
++    }
++  }, [config.endpoint]);
++
++  useEffect(() => {
++    let cancelled = false;
++
++    (async () => {
++      try {
++        const res = await fetch(config.endpoint);
++        if (!res.ok) throw new Error('Не удалось загрузить список');
++        const data = await res.json();
++        if (!cancelled) setItems(data);
++      } catch (error) {
++        if (!cancelled) toast.error(error instanceof Error ? error.message : 'Ошибка загрузки');
++      } finally {
++        if (!cancelled) setIsLoading(false);
++      }
++    })();
++
++    return () => {
++      cancelled = true;
++    };
++  }, [config.endpoint]);
++
++  useEffect(() => {
++    fetch('/api/games')
++      .then((res) => res.json())
++      .then(setGames)
++      .catch(() => toast.error('Не удалось загрузить список игр'));
++  }, []);
++
++  const resetForm = () => {
++    setForm(EMPTY_FORM);
++    setBlocks([]);
++    setSlugTouched(false);
+   };
+ 
+   const handleCreate = () => {
+-    setEditingItem(null);
+-    setTitle('');
+-    setSlug('');
+-    setBlocks([]);
++    resetForm();
+     setView('edit');
+   };
+ 
+-  const handleSave = () => {
+-    // TODO: интеграция с API
+-    console.log('Save:', { title, slug, blocks });
+-    setView('list');
++  const handleEdit = (item: Article) => {
++    const record = item as Article & Record<string, unknown>;
++    setForm({
++      id: record.id as string,
++      title: record.title as string,
++      slug: record.slug as string,
++      excerpt: (record.excerpt ?? record.description ?? '') as string,
++      status: record.status as ContentStatus,
++      gameId: record.gameId as string,
++      difficulty: (record.difficulty ?? 'BEGINNER') as Difficulty,
++      version: (record.version ?? '') as string,
++      weapon: (record.weapon ?? '') as string,
++      style: (record.style ?? 'PVE') as string,
++      role: (record.role ?? '') as string,
++    });
++    setBlocks((record.body as Block[]) ?? []);
++    setSlugTouched(true);
++    setView('edit');
+   };
+ 
++  const handleSave = async () => {
++    if (!form.title.trim() || !form.slug.trim() || !form.gameId) {
++      toast.error('Заполните заголовок, slug и игру');
++      return;
++    }
++
++    const payload: Record<string, unknown> = {
++      title: form.title,
++      slug: form.slug,
++      status: form.status,
++      gameId: form.gameId,
++      body: blocks,
++    };
++
++    if (kind === 'builds') {
++      payload.description = form.excerpt;
++      payload.weapon = form.weapon;
++      payload.style = form.style;
++      payload.difficulty = form.difficulty;
++      payload.role = form.role;
++    } else {
++      payload.excerpt = form.excerpt;
++      if (kind === 'guides') {
++        payload.difficulty = form.difficulty;
++        payload.version = form.version || undefined;
++      }
++    }
++
++    setIsSaving(true);
++    try {
++      const res = await fetch(form.id ? `${config.endpoint}/${form.id}` : config.endpoint, {
++        method: form.id ? 'PATCH' : 'POST',
++        headers: { 'Content-Type': 'application/json' },
++        body: JSON.stringify(payload),
++      });
++
++      if (!res.ok) {
++        const data = await res.json().catch(() => null);
++        throw new Error(data?.message ?? 'Не удалось сохранить запись');
++      }
++
++      toast.success(form.id ? 'Изменения сохранены' : 'Запись создана');
++      setView('list');
++      loadItems();
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Ошибка сохранения');
++    } finally {
++      setIsSaving(false);
++    }
++  };
++
++  const handleDelete = async () => {
++    if (!deleteTarget) return;
++    setIsDeleting(true);
++    try {
++      const res = await fetch(`${config.endpoint}/${(deleteTarget as { id: string }).id}`, {
++        method: 'DELETE',
++      });
++      if (!res.ok && res.status !== 204) throw new Error('Не удалось удалить запись');
++      toast.success('Запись удалена');
++      setDeleteTarget(null);
++      loadItems();
++    } catch (error) {
++      toast.error(error instanceof Error ? error.message : 'Ошибка удаления');
++    } finally {
++      setIsDeleting(false);
++    }
++  };
++
++  const columns = useMemo<ColumnDef<Article, unknown>[]>(
++    () => [
++      {
++        accessorKey: 'title',
++        header: ({ column }) => <DataTableColumnHeader column={column} title="Заголовок" />,
++        cell: ({ row }) => (
++          <span className="font-medium text-warm-white">{(row.original as { title: string }).title}</span>
++        ),
++      },
++      {
++        id: 'game',
++        header: 'Игра',
++        cell: ({ row }) => (row.original as { game?: { title: string } }).game?.title ?? '—',
++      },
++      {
++        accessorKey: 'status',
++        header: ({ column }) => <DataTableColumnHeader column={column} title="Статус" />,
++        cell: ({ row }) => {
++          const status = (row.original as { status: ContentStatus }).status;
++          const label = STATUS_OPTIONS.find((s) => s.value === status)?.label ?? status;
++          return <Badge variant={statusVariant(status)}>{label}</Badge>;
++        },
++      },
++      {
++        accessorKey: 'updatedAt',
++        header: ({ column }) => <DataTableColumnHeader column={column} title="Обновлено" />,
++        cell: ({ row }) =>
++          new Date((row.original as { updatedAt: string }).updatedAt).toLocaleDateString('ru-RU'),
++      },
++      {
++        id: 'actions',
++        header: '',
++        cell: ({ row }) => (
++          <div className="flex justify-end gap-2">
++            <Button variant="secondary" size="icon-sm" onClick={() => handleEdit(row.original)}>
++              <Pencil className="size-4" />
++            </Button>
++            <Button variant="destructive" size="icon-sm" onClick={() => setDeleteTarget(row.original)}>
++              <Trash2 className="size-4" />
++            </Button>
++          </div>
++        ),
++      },
++    ],
++    []
++  );
++
+   if (view === 'edit') {
+     return (
+       <div className="space-y-6">
+-        <div className="flex items-center gap-4">
+-          <Button
+-            variant="ghost"
+-            onClick={() => setView('list')}
+-          >
+-            <ArrowLeft className="mr-2 h-4 w-4" />
++        <div className="flex items-center gap-3">
++          <Button variant="ghost" onClick={() => setView('list')}>
++            <ArrowLeft className="mr-2 size-4" />
+             Назад
+           </Button>
+-          <Button variant="ghost" onClick={() => setView('preview')}>
+-            <Eye className="mr-2 h-4 w-4" />
++          <Button variant="ghost" onClick={() => setView('preview')} disabled={blocks.length === 0}>
++            <Eye className="mr-2 size-4" />
+             Превью
+           </Button>
+           <div className="flex-1" />
+-          <Button onClick={handleSave}>
+-            <Save className="mr-2 h-4 w-4" />
+-            Сохранить
++          <Button onClick={handleSave} disabled={isSaving}>
++            <Save className="mr-2 size-4" />
++            {isSaving ? 'Сохранение...' : 'Сохранить'}
+           </Button>
+         </div>
+ 
+-        <div className="grid gap-4">
+-          <Input
+-            label="Заголовок"
+-            value={title}
+-            onChange={(e) => setTitle(e.target.value)}
+-            placeholder="Заголовок статьи"
+-          />
+-          <Input
+-            label="Slug"
+-            value={slug}
+-            onChange={(e) => setSlug(e.target.value)}
+-            placeholder="url-slug"
+-          />
++        <div className="grid gap-4 sm:grid-cols-2">
++          <div className="space-y-1.5">
++            <label className="text-sm text-muted-gray">Заголовок</label>
++            <Input
++              value={form.title}
++              onChange={(e) => {
++                const title = e.target.value;
++                setForm((prev) => ({
++                  ...prev,
++                  title,
++                  slug: slugTouched ? prev.slug : slugify(title),
++                }));
++              }}
++              placeholder="Заголовок"
++            />
++          </div>
++          <div className="space-y-1.5">
++            <label className="text-sm text-muted-gray">Slug</label>
++            <Input
++              value={form.slug}
++              onChange={(e) => {
++                setSlugTouched(true);
++                setForm((prev) => ({ ...prev, slug: e.target.value }));
++              }}
++              placeholder="url-slug"
++            />
++          </div>
++
++          <div className="space-y-1.5">
++            <label className="text-sm text-muted-gray">Игра</label>
++            <Select
++              value={form.gameId}
++              onValueChange={(value) => setForm((prev) => ({ ...prev, gameId: value as string }))}
++            >
++              <SelectTrigger className="w-full">
++                <SelectValue placeholder="Выберите игру" />
++              </SelectTrigger>
++              <SelectContent>
++                {games.map((game) => (
++                  <SelectItem key={game.id} value={game.id}>
++                    {game.title}
++                  </SelectItem>
++                ))}
++              </SelectContent>
++            </Select>
++          </div>
++
++          <div className="space-y-1.5">
++            <label className="text-sm text-muted-gray">Статус</label>
++            <Select
++              value={form.status}
++              onValueChange={(value) => setForm((prev) => ({ ...prev, status: value as ContentStatus }))}
++            >
++              <SelectTrigger className="w-full">
++                <SelectValue />
++              </SelectTrigger>
++              <SelectContent>
++                {STATUS_OPTIONS.map((option) => (
++                  <SelectItem key={option.value} value={option.value}>
++                    {option.label}
++                  </SelectItem>
++                ))}
++              </SelectContent>
++            </Select>
++          </div>
++
++          <div className="space-y-1.5 sm:col-span-2">
++            <label className="text-sm text-muted-gray">
++              {kind === 'builds' ? 'Описание' : 'Краткое описание'}
++            </label>
++            <Textarea
++              value={form.excerpt}
++              onChange={(e) => setForm((prev) => ({ ...prev, excerpt: e.target.value }))}
++              placeholder={kind === 'builds' ? 'Описание билда' : 'Краткое описание для карточки'}
++            />
++          </div>
++
++          {kind === 'guides' && (
++            <>
++              <div className="space-y-1.5">
++                <label className="text-sm text-muted-gray">Сложность</label>
++                <Select
++                  value={form.difficulty}
++                  onValueChange={(value) => setForm((prev) => ({ ...prev, difficulty: value as Difficulty }))}
++                >
++                  <SelectTrigger className="w-full">
++                    <SelectValue />
++                  </SelectTrigger>
++                  <SelectContent>
++                    {DIFFICULTY_OPTIONS.map((option) => (
++                      <SelectItem key={option.value} value={option.value}>
++                        {option.label}
++                      </SelectItem>
++                    ))}
++                  </SelectContent>
++                </Select>
++              </div>
++              <div className="space-y-1.5">
++                <label className="text-sm text-muted-gray">Версия игры</label>
++                <Input
++                  value={form.version}
++                  onChange={(e) => setForm((prev) => ({ ...prev, version: e.target.value }))}
++                  placeholder="напр. 1.2.0"
++                />
++              </div>
++            </>
++          )}
++
++          {kind === 'builds' && (
++            <>
++              <div className="space-y-1.5">
++                <label className="text-sm text-muted-gray">Оружие</label>
++                <Input
++                  value={form.weapon}
++                  onChange={(e) => setForm((prev) => ({ ...prev, weapon: e.target.value }))}
++                  placeholder="напр. Меч"
++                />
++              </div>
++              <div className="space-y-1.5">
++                <label className="text-sm text-muted-gray">Роль</label>
++                <Input
++                  value={form.role}
++                  onChange={(e) => setForm((prev) => ({ ...prev, role: e.target.value }))}
++                  placeholder="напр. DPS"
++                />
++              </div>
++              <div className="space-y-1.5">
++                <label className="text-sm text-muted-gray">Стиль</label>
++                <Select
++                  value={form.style}
++                  onValueChange={(value) => setForm((prev) => ({ ...prev, style: value as string }))}
++                >
++                  <SelectTrigger className="w-full">
++                    <SelectValue />
++                  </SelectTrigger>
++                  <SelectContent>
++                    {BUILD_STYLE_OPTIONS.map((option) => (
++                      <SelectItem key={option.value} value={option.value}>
++                        {option.label}
++                      </SelectItem>
++                    ))}
++                  </SelectContent>
++                </Select>
++              </div>
++              <div className="space-y-1.5">
++                <label className="text-sm text-muted-gray">Сложность</label>
++                <Select
++                  value={form.difficulty}
++                  onValueChange={(value) => setForm((prev) => ({ ...prev, difficulty: value as Difficulty }))}
++                >
++                  <SelectTrigger className="w-full">
++                    <SelectValue />
++                  </SelectTrigger>
++                  <SelectContent>
++                    {DIFFICULTY_OPTIONS.map((option) => (
++                      <SelectItem key={option.value} value={option.value}>
++                        {option.label}
++                      </SelectItem>
++                    ))}
++                  </SelectContent>
++                </Select>
++              </div>
++            </>
++          )}
+         </div>
+ 
+         <div>
+-          <h2 className="mb-3 text-lg font-semibold text-warm-white">
+-            Контент (блоки)
+-          </h2>
++          <h2 className="mb-3 text-lg font-semibold text-warm-white">Контент (блоки)</h2>
+           <BlockEditor blocks={blocks} onChange={setBlocks} />
+         </div>
+       </div>
+     );
+   }
+ 
+-  if (view === 'preview' && editingItem) {
++  if (view === 'preview') {
+     return (
+       <div className="space-y-4">
+-        <div className="flex items-center gap-4">
+-          <Button variant="ghost" onClick={() => setView('edit')}>
+-            <ArrowLeft className="mr-2 h-4 w-4" />
+-            Редактор
+-          </Button>
+-        </div>
++        <Button variant="ghost" onClick={() => setView('edit')}>
++          <ArrowLeft className="mr-2 size-4" />
++          Редактор
++        </Button>
+         <article className="mx-auto max-w-3xl">
+-          <h1 className="mb-6 text-4xl font-bold text-warm-white">{title}</h1>
++          <h1 className="mb-6 text-4xl font-bold text-warm-white">{form.title}</h1>
+           <BlockRenderer blocks={blocks} />
+         </article>
+       </div>
+@@ -106,14 +509,61 @@ export default function ContentAdminPage() {
+   }
+ 
+   return (
+-    <div className="space-y-4">
+-      <div className="flex items-center justify-between">
+-        <h1 className="text-2xl font-bold text-warm-white">Контент</h1>
+-        <Button onClick={handleCreate}>Создать</Button>
++    <div className="space-y-6">
++      <PageHeader
++        title="Контент"
++        description="Новости, гайды и билды сайта"
++        action={<Button onClick={handleCreate}>
++          <Plus className="mr-2 size-4" />
++          {config.createLabel}
++        </Button>}
++      />
++
++      <div className="flex gap-2 border-b border-white/10">
++        {(Object.keys(KIND_CONFIG) as ArticleKind[]).map((key) => (
++          <Link
++            key={key}
++            href={`/admin/content?type=${key}`}
++            className={cn(
++              'px-4 py-2 text-sm font-medium text-muted-gray transition-colors hover:text-warm-white',
++              kind === key && 'border-b-2 border-[#C7A56A] text-warm-white'
++            )}
++          >
++            {KIND_CONFIG[key].label}
++          </Link>
++        ))}
+       </div>
++
+       <DataTable
+-      // TODO: подключить данные из API
++        columns={columns}
++        data={items}
++        isLoading={isLoading}
++        searchPlaceholder={`Поиск по ${config.label.toLowerCase()}...`}
++        globalFilterKey="title"
++      />
++
++      <DeleteDialog
++        open={!!deleteTarget}
++        onOpenChange={(open) => !open && setDeleteTarget(null)}
++        title={(deleteTarget as { title: string } | null)?.title ?? ''}
++        isDeleting={isDeleting}
++        onConfirm={handleDelete}
+       />
+     </div>
+   );
+-}
+\ No newline at end of file
++}
++
++function ContentAdminPageInner() {
++  const searchParams = useSearchParams();
++  const kind = (searchParams.get('type') as ArticleKind) ?? 'news';
++
++  return <ContentTypeView key={kind} kind={kind} />;
++}
++
++export default function ContentAdminPage() {
++  return (
++    <Suspense fallback={null}>
++      <ContentAdminPageInner />
++    </Suspense>
++  );
++}
+diff --git a/app/admin/layout.tsx b/app/admin/layout.tsx
+index a84bf93..ff6403a 100644
+--- a/app/admin/layout.tsx
++++ b/app/admin/layout.tsx
+@@ -1,5 +1,6 @@
+ import AdminSidebar from "@/components/admin/layout/AdminSidebar";
+ import AdminHeader from "@/components/admin/layout/AdminHeader";
++import { Toaster } from "@/components/ui/sonner";
+ 
+ export default function AdminLayout({
+   children,
+@@ -23,6 +24,8 @@ export default function AdminLayout({
+ 
+       </div>
+ 
++      <Toaster />
++
+     </div>
+   );
+ }
+\ No newline at end of file
+diff --git a/app/api/builds/[id]/route.ts b/app/api/builds/[id]/route.ts
+new file mode 100644
+index 0000000..b909931
+--- /dev/null
++++ b/app/api/builds/[id]/route.ts
+@@ -0,0 +1,26 @@
++import { NextRequest, NextResponse } from "next/server";
++import { updateBuild, deleteBuild } from "@/lib/services/content.service";
++import { apiError } from "@/lib/api/errors";
++
++type Params = { params: Promise<{ id: string }> };
++
++export async function PATCH(request: NextRequest, { params }: Params) {
++  try {
++    const { id } = await params;
++    const body = await request.json();
++    const build = await updateBuild(id, body);
++    return NextResponse.json(build);
++  } catch (error) {
++    return apiError(error);
++  }
++}
++
++export async function DELETE(_request: NextRequest, { params }: Params) {
++  try {
++    const { id } = await params;
++    await deleteBuild(id);
++    return new NextResponse(null, { status: 204 });
++  } catch (error) {
++    return apiError(error);
++  }
++}
+diff --git a/app/api/builds/route.ts b/app/api/builds/route.ts
+new file mode 100644
+index 0000000..7b5d9e6
+--- /dev/null
++++ b/app/api/builds/route.ts
+@@ -0,0 +1,19 @@
++import { NextRequest, NextResponse } from "next/server";
++import { listBuilds, createBuild, getOrCreateDefaultAuthor } from "@/lib/services/content.service";
++import { apiError } from "@/lib/api/errors";
++
++export async function GET() {
++  const builds = await listBuilds();
++  return NextResponse.json(builds);
++}
++
++export async function POST(request: NextRequest) {
++  try {
++    const body = await request.json();
++    const author = await getOrCreateDefaultAuthor();
++    const build = await createBuild({ ...body, authorId: author.id });
++    return NextResponse.json(build, { status: 201 });
++  } catch (error) {
++    return apiError(error);
++  }
++}
+diff --git a/app/api/games/route.ts b/app/api/games/route.ts
+new file mode 100644
+index 0000000..84c74dd
+--- /dev/null
++++ b/app/api/games/route.ts
+@@ -0,0 +1,7 @@
++import { NextResponse } from "next/server";
++import { listGames } from "@/lib/services/game.service";
++
++export async function GET() {
++  const games = await listGames();
++  return NextResponse.json(games);
++}
+diff --git a/app/api/guides/[id]/route.ts b/app/api/guides/[id]/route.ts
+new file mode 100644
+index 0000000..9b0066e
+--- /dev/null
++++ b/app/api/guides/[id]/route.ts
+@@ -0,0 +1,26 @@
++import { NextRequest, NextResponse } from "next/server";
++import { updateGuide, deleteGuide } from "@/lib/services/content.service";
++import { apiError } from "@/lib/api/errors";
++
++type Params = { params: Promise<{ id: string }> };
++
++export async function PATCH(request: NextRequest, { params }: Params) {
++  try {
++    const { id } = await params;
++    const body = await request.json();
++    const guide = await updateGuide(id, body);
++    return NextResponse.json(guide);
++  } catch (error) {
++    return apiError(error);
++  }
++}
++
++export async function DELETE(_request: NextRequest, { params }: Params) {
++  try {
++    const { id } = await params;
++    await deleteGuide(id);
++    return new NextResponse(null, { status: 204 });
++  } catch (error) {
++    return apiError(error);
++  }
++}
+diff --git a/app/api/guides/route.ts b/app/api/guides/route.ts
+new file mode 100644
+index 0000000..0401e0b
+--- /dev/null
++++ b/app/api/guides/route.ts
+@@ -0,0 +1,19 @@
++import { NextRequest, NextResponse } from "next/server";
++import { listGuides, createGuide, getOrCreateDefaultAuthor } from "@/lib/services/content.service";
++import { apiError } from "@/lib/api/errors";
++
++export async function GET() {
++  const guides = await listGuides();
++  return NextResponse.json(guides);
++}
++
++export async function POST(request: NextRequest) {
++  try {
++    const body = await request.json();
++    const author = await getOrCreateDefaultAuthor();
++    const guide = await createGuide({ ...body, authorId: author.id });
++    return NextResponse.json(guide, { status: 201 });
++  } catch (error) {
++    return apiError(error);
++  }
++}
+diff --git a/app/api/news/[id]/route.ts b/app/api/news/[id]/route.ts
+new file mode 100644
+index 0000000..36983b5
+--- /dev/null
++++ b/app/api/news/[id]/route.ts
+@@ -0,0 +1,26 @@
++import { NextRequest, NextResponse } from "next/server";
++import { updateNews, deleteNews } from "@/lib/services/content.service";
++import { apiError } from "@/lib/api/errors";
++
++type Params = { params: Promise<{ id: string }> };
++
++export async function PATCH(request: NextRequest, { params }: Params) {
++  try {
++    const { id } = await params;
++    const body = await request.json();
++    const news = await updateNews(id, body);
++    return NextResponse.json(news);
++  } catch (error) {
++    return apiError(error);
++  }
++}
++
++export async function DELETE(_request: NextRequest, { params }: Params) {
++  try {
++    const { id } = await params;
++    await deleteNews(id);
++    return new NextResponse(null, { status: 204 });
++  } catch (error) {
++    return apiError(error);
++  }
++}
+diff --git a/app/api/news/route.ts b/app/api/news/route.ts
+new file mode 100644
+index 0000000..35149ab
+--- /dev/null
++++ b/app/api/news/route.ts
+@@ -0,0 +1,19 @@
++import { NextRequest, NextResponse } from "next/server";
++import { listNews, createNews, getOrCreateDefaultAuthor } from "@/lib/services/content.service";
++import { apiError } from "@/lib/api/errors";
++
++export async function GET() {
++  const news = await listNews();
++  return NextResponse.json(news);
++}
++
++export async function POST(request: NextRequest) {
++  try {
++    const body = await request.json();
++    const author = await getOrCreateDefaultAuthor();
++    const news = await createNews({ ...body, authorId: author.id });
++    return NextResponse.json(news, { status: 201 });
++  } catch (error) {
++    return apiError(error);
++  }
++}
+diff --git a/components/admin/layout/AdminSidebar.tsx b/components/admin/layout/AdminSidebar.tsx
+index 7424fdf..e5c4cdb 100644
+--- a/components/admin/layout/AdminSidebar.tsx
++++ b/components/admin/layout/AdminSidebar.tsx
+@@ -19,8 +19,9 @@ import {
+ const menu = [
+   { name: "Панель управления", href: "/admin/dashboard", icon: LayoutDashboard },
+   { name: "Игры", href: "/admin/games", icon: Gamepad2 },
+-  { name: "Новости", href: "/admin/news", icon: Newspaper },
+-  { name: "Гайды", href: "/admin/guides", icon: BookOpen },
++  { name: "Новости", href: "/admin/content?type=news", icon: Newspaper },
++  { name: "Гайды", href: "/admin/content?type=guides", icon: BookOpen },
++  { name: "Билды", href: "/admin/content?type=builds", icon: Swords },
+   { name: "Оружие", href: "/admin/weapons", icon: Swords },
+   { name: "Экипировка", href: "/admin/equipment", icon: Shield },
+   { name: "Навыки", href: "/admin/skills", icon: ScrollText },
+diff --git a/components/cms/blocks/BlockRenderer.tsx b/components/cms/blocks/BlockRenderer.tsx
+index 68bab9a..c767b4b 100644
+--- a/components/cms/blocks/BlockRenderer.tsx
++++ b/components/cms/blocks/BlockRenderer.tsx
+@@ -1,4 +1,4 @@
+-import { Fragment } from 'react';
++import { Fragment, type ComponentType } from 'react';
+ import type { Block } from '@/lib/types/block';
+ import { TextBlock } from './TextBlock';
+ import { HeadingBlock } from './HeadingBlock';
+@@ -35,7 +35,7 @@ export function BlockRenderer({ blocks, className }: BlockRendererProps) {
+   return (
+     <div className={className}>
+       {blocks.map((block) => {
+-        const Component = blockComponents[block.type];
++        const Component = blockComponents[block.type] as ComponentType<{ block: Block }>;
+         if (!Component) return null;
+         return (
+           <Fragment key={block.id}>
+diff --git a/components/cms/dialogs/DeleteDialog.tsx b/components/cms/dialogs/DeleteDialog.tsx
+index e69de29..28ce4bd 100644
+--- a/components/cms/dialogs/DeleteDialog.tsx
++++ b/components/cms/dialogs/DeleteDialog.tsx
+@@ -0,0 +1,42 @@
++"use client";
++
++import { Button } from "@/components/ui/Button";
++import {
++  Dialog,
++  DialogContent,
++  DialogDescription,
++  DialogFooter,
++  DialogHeader,
++  DialogTitle,
++} from "@/components/ui/dialog";
++
++interface DeleteDialogProps {
++  open: boolean;
++  onOpenChange: (open: boolean) => void;
++  title: string;
++  isDeleting?: boolean;
++  onConfirm: () => void;
++}
++
++export function DeleteDialog({ open, onOpenChange, title, isDeleting, onConfirm }: DeleteDialogProps) {
++  return (
++    <Dialog open={open} onOpenChange={onOpenChange}>
++      <DialogContent>
++        <DialogHeader>
++          <DialogTitle>Удалить запись?</DialogTitle>
++          <DialogDescription>
++            «{title}» будет удалена без возможности восстановления.
++          </DialogDescription>
++        </DialogHeader>
++        <DialogFooter>
++          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isDeleting}>
++            Отмена
++          </Button>
++          <Button variant="destructive" onClick={onConfirm} disabled={isDeleting}>
++            {isDeleting ? "Удаление..." : "Удалить"}
++          </Button>
++        </DialogFooter>
++      </DialogContent>
++    </Dialog>
++  );
++}
+diff --git a/components/cms/editor/BlockEditor.tsx b/components/cms/editor/BlockEditor.tsx
+index b1a7d6a..bfd5082 100644
+--- a/components/cms/editor/BlockEditor.tsx
++++ b/components/cms/editor/BlockEditor.tsx
+@@ -13,20 +13,28 @@ interface BlockEditorProps {
+ function createBlock(type: BlockType, order: number): Block {
+   const id = crypto.randomUUID();
+ 
+-  const defaults: Record<BlockType, Block> = {
+-    text: { id, type: 'text', order, data: { content: '', alignment: 'left' } },
+-    heading: { id, type: 'heading', order, data: { content: '', level: 2 } },
+-    image: { id, type: 'image', order, data: { src: '', alt: '', caption: '', width: 'full' } },
+-    video: { id, type: 'video', order, data: { provider: 'vk', videoId: '', caption: '' } },
+-    quote: { id, type: 'quote', order, data: { content: '', author: '', source: '' } },
+-    list: { id, type: 'list', order, data: { items: [''], ordered: false } },
+-    table: { id, type: 'table', order, data: { headers: [''], rows: [] } },
+-    calculator: { id, type: 'calculator', order, data: { game: 'wwm', configId: '', title: '' } },
+-    map: { id, type: 'map', order, data: { game: 'wwm', title: '', showFilters: true } },
+-    divider: { id, type: 'divider', order, data: {} },
+-  };
+-
+-  return defaults[type];
++  switch (type) {
++    case 'text':
++      return { id, type: 'text', order, data: { content: '', alignment: 'left' } };
++    case 'heading':
++      return { id, type: 'heading', order, data: { content: '', level: 2 } };
++    case 'image':
++      return { id, type: 'image', order, data: { src: '', alt: '', caption: '', width: 'full' } };
++    case 'video':
++      return { id, type: 'video', order, data: { provider: 'vk', videoId: '', caption: '' } };
++    case 'quote':
++      return { id, type: 'quote', order, data: { content: '', author: '', source: '' } };
++    case 'list':
++      return { id, type: 'list', order, data: { items: [''], ordered: false } };
++    case 'table':
++      return { id, type: 'table', order, data: { headers: [''], rows: [] } };
++    case 'calculator':
++      return { id, type: 'calculator', order, data: { game: 'wwm', configId: '', title: '' } };
++    case 'map':
++      return { id, type: 'map', order, data: { game: 'wwm', title: '', showFilters: true } };
++    case 'divider':
++      return { id, type: 'divider', order, data: {} };
++  }
+ }
+ 
+ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
+@@ -39,10 +47,10 @@ export function BlockEditor({ blocks, onChange }: BlockEditorProps) {
+   );
+ 
+   const updateBlock = useCallback(
+-    (id: string, data: Partial<Block['data']>) => {
++    (id: string, data: Record<string, unknown>) => {
+       onChange(
+         blocks.map((b) =>
+-          b.id === id ? { ...b, data: { ...b.data, ...data } } : b
++          b.id === id ? ({ ...b, data: { ...b.data, ...data } } as Block) : b
+         )
+       );
+     },
+diff --git a/components/cms/editor/BlockItem.tsx b/components/cms/editor/BlockItem.tsx
+index 9fdb535..303feb6 100644
+--- a/components/cms/editor/BlockItem.tsx
++++ b/components/cms/editor/BlockItem.tsx
+@@ -28,7 +28,7 @@ interface BlockItemProps {
+   block: Block;
+   index: number;
+   total: number;
+-  onUpdate: (id: string, data: Partial<Block['data']>) => void;
++  onUpdate: (id: string, data: Record<string, unknown>) => void;
+   onDelete: (id: string) => void;
+   onDuplicate: (id: string) => void;
+   onMove: (id: string, direction: 'up' | 'down') => void;
+diff --git a/components/data-table/DataTable.tsx b/components/data-table/DataTable.tsx
+index e69de29..f28ec40 100644
+--- a/components/data-table/DataTable.tsx
++++ b/components/data-table/DataTable.tsx
+@@ -0,0 +1,115 @@
++"use client";
++
++import { useState } from "react";
++import {
++  type ColumnDef,
++  type SortingState,
++  flexRender,
++  getCoreRowModel,
++  getFilteredRowModel,
++  getPaginationRowModel,
++  getSortedRowModel,
++  useReactTable,
++} from "@tanstack/react-table";
++
++import {
++  Table,
++  TableBody,
++  TableCell,
++  TableHead,
++  TableHeader,
++  TableRow,
++} from "@/components/ui/table";
++import { DataTableToolbar } from "./DataTableToolbar";
++import { DataTablePagination } from "./DataTablePagination";
++import { DataTableSkeleton } from "./DataTableSkeleton";
++import EmptyState from "@/components/common/EmptyState";
++
++interface DataTableProps<TData, TValue> {
++  columns: ColumnDef<TData, TValue>[];
++  data: TData[];
++  isLoading?: boolean;
++  searchPlaceholder?: string;
++  /** Ключ строки, по которому фильтруется глобальный поиск (например "title"). */
++  globalFilterKey?: keyof TData;
++}
++
++export function DataTable<TData, TValue>({
++  columns,
++  data,
++  isLoading,
++  searchPlaceholder,
++  globalFilterKey,
++}: DataTableProps<TData, TValue>) {
++  const [sorting, setSorting] = useState<SortingState>([]);
++  const [globalFilter, setGlobalFilter] = useState("");
++
++  const table = useReactTable({
++    data,
++    columns,
++    state: { sorting, globalFilter },
++    onSortingChange: setSorting,
++    onGlobalFilterChange: setGlobalFilter,
++    globalFilterFn: (row, _columnId, filterValue) => {
++      const key = globalFilterKey ?? ("title" as keyof TData);
++      const value = String(row.original[key] ?? "").toLowerCase();
++      return value.includes(String(filterValue).toLowerCase());
++    },
++    getCoreRowModel: getCoreRowModel(),
++    getSortedRowModel: getSortedRowModel(),
++    getFilteredRowModel: getFilteredRowModel(),
++    getPaginationRowModel: getPaginationRowModel(),
++    initialState: { pagination: { pageSize: 10 } },
++  });
++
++  if (isLoading) {
++    return <DataTableSkeleton columns={columns.length} />;
++  }
++
++  return (
++    <div className="space-y-4">
++      <DataTableToolbar
++        value={globalFilter}
++        onChange={setGlobalFilter}
++        placeholder={searchPlaceholder}
++      />
++
++      {data.length === 0 ? (
++        <EmptyState />
++      ) : (
++        <>
++          <div className="rounded-xl border border-white/10">
++            <Table>
++              <TableHeader>
++                {table.getHeaderGroups().map((headerGroup) => (
++                  <TableRow key={headerGroup.id} className="border-white/10 hover:bg-transparent">
++                    {headerGroup.headers.map((header) => (
++                      <TableHead key={header.id}>
++                        {header.isPlaceholder
++                          ? null
++                          : flexRender(header.column.columnDef.header, header.getContext())}
++                      </TableHead>
++                    ))}
++                  </TableRow>
++                ))}
++              </TableHeader>
++              <TableBody>
++                {table.getRowModel().rows.map((row) => (
++                  <TableRow key={row.id} className="border-white/5">
++                    {row.getVisibleCells().map((cell) => (
++                      <TableCell key={cell.id}>
++                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
++                      </TableCell>
++                    ))}
++                  </TableRow>
++                ))}
++              </TableBody>
++            </Table>
++          </div>
++
++          <DataTablePagination table={table} />
++        </>
++      )}
++    </div>
++  );
++}
+diff --git a/components/data-table/DataTableColumnHeader.tsx b/components/data-table/DataTableColumnHeader.tsx
+index e69de29..225c72d 100644
+--- a/components/data-table/DataTableColumnHeader.tsx
++++ b/components/data-table/DataTableColumnHeader.tsx
+@@ -0,0 +1,43 @@
++"use client";
++
++import type { Column } from "@tanstack/react-table";
++import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
++
++import { cn } from "@/lib/utils";
++import { Button } from "@/components/ui/Button";
++
++interface DataTableColumnHeaderProps<TData, TValue> {
++  column: Column<TData, TValue>;
++  title: string;
++  className?: string;
++}
++
++export function DataTableColumnHeader<TData, TValue>({
++  column,
++  title,
++  className,
++}: DataTableColumnHeaderProps<TData, TValue>) {
++  if (!column.getCanSort()) {
++    return <div className={cn("text-sm font-medium", className)}>{title}</div>;
++  }
++
++  const sorted = column.getIsSorted();
++
++  return (
++    <Button
++      variant="ghost"
++      size="sm"
++      className={cn("-ml-2.5 h-7 gap-1.5 px-2.5", className)}
++      onClick={() => column.toggleSorting(sorted === "asc")}
++    >
++      {title}
++      {sorted === "asc" ? (
++        <ArrowUp className="size-3.5" />
++      ) : sorted === "desc" ? (
++        <ArrowDown className="size-3.5" />
++      ) : (
++        <ChevronsUpDown className="size-3.5 text-muted-foreground" />
++      )}
++    </Button>
++  );
++}
+diff --git a/components/data-table/DataTablePagination.tsx b/components/data-table/DataTablePagination.tsx
+index e69de29..2471430 100644
+--- a/components/data-table/DataTablePagination.tsx
++++ b/components/data-table/DataTablePagination.tsx
+@@ -0,0 +1,46 @@
++"use client";
++
++import type { Table } from "@tanstack/react-table";
++import { ChevronLeft, ChevronRight } from "lucide-react";
++
++import { Button } from "@/components/ui/Button";
++
++interface DataTablePaginationProps<TData> {
++  table: Table<TData>;
++}
++
++export function DataTablePagination<TData>({ table }: DataTablePaginationProps<TData>) {
++  const { pageIndex, pageSize } = table.getState().pagination;
++  const total = table.getFilteredRowModel().rows.length;
++
++  return (
++    <div className="flex items-center justify-between gap-4 pt-2">
++      <p className="text-sm text-muted-foreground">
++        {total === 0
++          ? "Нет записей"
++          : `${pageIndex * pageSize + 1}–${Math.min((pageIndex + 1) * pageSize, total)} из ${total}`}
++      </p>
++      <div className="flex items-center gap-2">
++        <Button
++          variant="outline"
++          size="icon-sm"
++          onClick={() => table.previousPage()}
++          disabled={!table.getCanPreviousPage()}
++        >
++          <ChevronLeft className="size-4" />
++        </Button>
++        <span className="text-sm text-muted-foreground">
++          {pageIndex + 1} / {Math.max(table.getPageCount(), 1)}
++        </span>
++        <Button
++          variant="outline"
++          size="icon-sm"
++          onClick={() => table.nextPage()}
++          disabled={!table.getCanNextPage()}
++        >
++          <ChevronRight className="size-4" />
++        </Button>
++      </div>
++    </div>
++  );
++}
+diff --git a/components/data-table/DataTableSkeleton.tsx b/components/data-table/DataTableSkeleton.tsx
+index e69de29..7aee520 100644
+--- a/components/data-table/DataTableSkeleton.tsx
++++ b/components/data-table/DataTableSkeleton.tsx
+@@ -0,0 +1,17 @@
++export function DataTableSkeleton({ columns = 4, rows = 6 }: { columns?: number; rows?: number }) {
++  return (
++    <div className="space-y-2">
++      {Array.from({ length: rows }).map((_, rowIndex) => (
++        <div key={rowIndex} className="flex items-center gap-4 rounded-lg border border-white/5 p-3">
++          {Array.from({ length: columns }).map((_, colIndex) => (
++            <div
++              key={colIndex}
++              className="h-4 flex-1 animate-pulse rounded bg-white/5"
++              style={{ maxWidth: colIndex === 0 ? "40%" : undefined }}
++            />
++          ))}
++        </div>
++      ))}
++    </div>
++  );
++}
+diff --git a/components/data-table/DataTableToolbar.tsx b/components/data-table/DataTableToolbar.tsx
+index e69de29..cddc310 100644
+--- a/components/data-table/DataTableToolbar.tsx
++++ b/components/data-table/DataTableToolbar.tsx
+@@ -0,0 +1,25 @@
++"use client";
++
++import { Search } from "lucide-react";
++
++import { Input } from "@/components/ui/input";
++
++interface DataTableToolbarProps {
++  value: string;
++  onChange: (value: string) => void;
++  placeholder?: string;
++}
++
++export function DataTableToolbar({ value, onChange, placeholder = "Поиск..." }: DataTableToolbarProps) {
++  return (
++    <div className="relative max-w-sm">
++      <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
++      <Input
++        value={value}
++        onChange={(e) => onChange(e.target.value)}
++        placeholder={placeholder}
++        className="pl-8"
++      />
++    </div>
++  );
++}
+diff --git a/components/forms/Select.tsx b/components/forms/Select.tsx
+index e69de29..e2a483a 100644
+--- a/components/forms/Select.tsx
++++ b/components/forms/Select.tsx
+@@ -0,0 +1,41 @@
++"use client";
++
++import {
++  Select as SelectPrimitive,
++  SelectContent,
++  SelectItem,
++  SelectTrigger,
++  SelectValue,
++} from "@/components/ui/select";
++
++interface FormSelectOption {
++  value: string;
++  label: string;
++}
++
++interface FormSelectProps {
++  label?: string;
++  value: string;
++  onChange: (value: string) => void;
++  options: FormSelectOption[];
++}
++
++export function Select({ label, value, onChange, options }: FormSelectProps) {
++  return (
++    <div className="space-y-1.5">
++      {label && <label className="text-sm text-muted-gray">{label}</label>}
++      <SelectPrimitive value={value} onValueChange={(v) => onChange(v as string)}>
++        <SelectTrigger className="w-full">
++          <SelectValue />
++        </SelectTrigger>
++        <SelectContent>
++          {options.map((option) => (
++            <SelectItem key={option.value} value={option.value}>
++              {option.label}
++            </SelectItem>
++          ))}
++        </SelectContent>
++      </SelectPrimitive>
++    </div>
++  );
++}
+diff --git a/components/forms/Switch.tsx b/components/forms/Switch.tsx
+index e69de29..bbdadd8 100644
+--- a/components/forms/Switch.tsx
++++ b/components/forms/Switch.tsx
+@@ -0,0 +1,29 @@
++"use client";
++
++import { Switch as SwitchPrimitive } from "@base-ui/react/switch";
++
++import { cn } from "@/lib/utils";
++
++interface FormSwitchProps {
++  label?: string;
++  checked: boolean;
++  onChange: (checked: boolean) => void;
++}
++
++export function Switch({ label, checked, onChange }: FormSwitchProps) {
++  return (
++    <label className="flex items-center gap-2.5 text-sm text-muted-gray">
++      <SwitchPrimitive.Root
++        checked={checked}
++        onCheckedChange={onChange}
++        className={cn(
++          "relative h-5 w-9 rounded-full bg-input transition-colors",
++          "data-[checked]:bg-primary"
++        )}
++      >
++        <SwitchPrimitive.Thumb className="block size-4 translate-x-0.5 rounded-full bg-background transition-transform data-[checked]:translate-x-[18px]" />
++      </SwitchPrimitive.Root>
++      {label}
++    </label>
++  );
++}
+diff --git a/components/forms/Textarea.tsx b/components/forms/Textarea.tsx
+index e69de29..fe1de33 100644
+--- a/components/forms/Textarea.tsx
++++ b/components/forms/Textarea.tsx
+@@ -0,0 +1,25 @@
++"use client";
++
++import { Textarea as TextareaPrimitive } from "@/components/ui/textarea";
++
++interface FormTextareaProps {
++  label?: string;
++  value: string;
++  onChange: (value: string) => void;
++  rows?: number;
++  placeholder?: string;
++}
++
++export function Textarea({ label, value, onChange, rows = 4, placeholder }: FormTextareaProps) {
++  return (
++    <div className="space-y-1.5">
++      {label && <label className="text-sm text-muted-gray">{label}</label>}
++      <TextareaPrimitive
++        value={value}
++        onChange={(e) => onChange(e.target.value)}
++        rows={rows}
++        placeholder={placeholder}
++      />
++    </div>
++  );
++}
+diff --git a/components/ui/input.tsx b/components/ui/input.tsx
+index 7d21bab..5c1dc90 100644
+--- a/components/ui/input.tsx
++++ b/components/ui/input.tsx
+@@ -3,9 +3,19 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
+ 
+ import { cn } from "@/lib/utils"
+ 
+-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+-  return (
++function Input({
++  className,
++  type,
++  label,
++  id,
++  ...props
++}: React.ComponentProps<"input"> & { label?: string }) {
++  const generatedId = React.useId();
++  const inputId = id ?? (label ? generatedId : undefined);
++
++  const input = (
+     <InputPrimitive
++      id={inputId}
+       type={type}
+       data-slot="input"
+       className={cn(
+@@ -14,7 +24,18 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
+       )}
+       {...props}
+     />
+-  )
++  );
++
++  if (!label) return input;
++
++  return (
++    <div className="space-y-1.5">
++      <label htmlFor={inputId} className="text-sm text-muted-gray">
++        {label}
++      </label>
++      {input}
++    </div>
++  );
+ }
+ 
+ export { Input }
+diff --git a/lib/api/errors.ts b/lib/api/errors.ts
+new file mode 100644
+index 0000000..a3a4eb3
+--- /dev/null
++++ b/lib/api/errors.ts
+@@ -0,0 +1,35 @@
++import { NextResponse } from "next/server";
++import { ZodError } from "zod";
++
++export function apiError(error: unknown) {
++  if (error instanceof ZodError) {
++    return NextResponse.json(
++      { error: "validation_error", issues: error.issues },
++      { status: 400 }
++    );
++  }
++
++  if (
++    typeof error === "object" &&
++    error !== null &&
++    "code" in error &&
++    (error as { code?: string }).code === "P2025"
++  ) {
++    return NextResponse.json({ error: "not_found" }, { status: 404 });
++  }
++
++  if (
++    typeof error === "object" &&
++    error !== null &&
++    "code" in error &&
++    (error as { code?: string }).code === "P2002"
++  ) {
++    return NextResponse.json(
++      { error: "slug_conflict", message: "Такой slug уже используется" },
++      { status: 409 }
++    );
++  }
++
++  console.error(error);
++  return NextResponse.json({ error: "internal_error" }, { status: 500 });
++}
+diff --git a/lib/services/content.service.ts b/lib/services/content.service.ts
+index ff0ab2d..46ebf1f 100644
+--- a/lib/services/content.service.ts
++++ b/lib/services/content.service.ts
+@@ -24,6 +24,26 @@ const contentInclude = {
+   tags: { include: { tag: true } },
+ } as const;
+ 
++/**
++ * В проекте пока нет системы авторизации (см. AGENTS.md/roadmap), но модель
++ * контента требует authorId. До появления реальной аутентификации все
++ * материалы, созданные через админку, привязываются к системному автору.
++ * Как только появится auth — этот хелпер заменяется на текущего пользователя сессии.
++ */
++export async function getOrCreateDefaultAuthor() {
++  const existing = await prisma.user.findFirst({ where: { role: "ADMIN" } });
++  if (existing) return existing;
++
++  return prisma.user.create({
++    data: {
++      name: "RHD Atlas",
++      email: "system@rhdatlas.local",
++      passwordHash: "unset",
++      role: "ADMIN",
++    },
++  });
++}
++
+ // ---------- News ----------
+ 
+ export async function listNews() {
+diff --git a/lib/types/article.ts b/lib/types/article.ts
+index db85244..9c7fd56 100644
+--- a/lib/types/article.ts
++++ b/lib/types/article.ts
+@@ -1 +1,11 @@
+ export type { ContentStatus, Difficulty } from "../../generated/prisma/client";
++
++import type { NewsWithRelations } from "./news";
++import type { GuideWithRelations } from "./guide";
++import type { BuildWithRelations } from "./build";
++
++/** Тип контента, которым управляет единый /admin/content. */
++export type ArticleKind = "news" | "guides" | "builds";
++
++/** Общая форма записи контента (News | Guide | Build) для списка и редактора. */
++export type Article = NewsWithRelations | GuideWithRelations | BuildWithRelations;

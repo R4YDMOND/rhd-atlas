@@ -24,6 +24,26 @@ const contentInclude = {
   tags: { include: { tag: true } },
 } as const;
 
+/**
+ * В проекте пока нет системы авторизации (см. AGENTS.md/roadmap), но модель
+ * контента требует authorId. До появления реальной аутентификации все
+ * материалы, созданные через админку, привязываются к системному автору.
+ * Как только появится auth — этот хелпер заменяется на текущего пользователя сессии.
+ */
+export async function getOrCreateDefaultAuthor() {
+  const existing = await prisma.user.findFirst({ where: { role: "ADMIN" } });
+  if (existing) return existing;
+
+  return prisma.user.create({
+    data: {
+      name: "RHD Atlas",
+      email: "system@rhdatlas.local",
+      passwordHash: "unset",
+      role: "ADMIN",
+    },
+  });
+}
+
 // ---------- News ----------
 
 export async function listNews() {

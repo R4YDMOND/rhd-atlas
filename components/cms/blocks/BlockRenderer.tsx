@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, type ComponentType } from 'react';
 import type { Block } from '@/lib/types/block';
 import { TextBlock } from './TextBlock';
 import { HeadingBlock } from './HeadingBlock';
@@ -35,7 +35,7 @@ export function BlockRenderer({ blocks, className }: BlockRendererProps) {
   return (
     <div className={className}>
       {blocks.map((block) => {
-        const Component = blockComponents[block.type];
+        const Component = blockComponents[block.type] as ComponentType<{ block: Block }>;
         if (!Component) return null;
         return (
           <Fragment key={block.id}>

@@ -3,9 +3,19 @@ import { Input as InputPrimitive } from "@base-ui/react/input"
 
 import { cn } from "@/lib/utils"
 
-function Input({ className, type, ...props }: React.ComponentProps<"input">) {
-  return (
+function Input({
+  className,
+  type,
+  label,
+  id,
+  ...props
+}: React.ComponentProps<"input"> & { label?: string }) {
+  const generatedId = React.useId();
+  const inputId = id ?? (label ? generatedId : undefined);
+
+  const input = (
     <InputPrimitive
+      id={inputId}
       type={type}
       data-slot="input"
       className={cn(
@@ -14,7 +24,18 @@ function Input({ className, type, ...props }: React.ComponentProps<"input">) {
       )}
       {...props}
     />
-  )
+  );
+
+  if (!label) return input;
+
+  return (
+    <div className="space-y-1.5">
+      <label htmlFor={inputId} className="text-sm text-muted-gray">
+        {label}
+      </label>
+      {input}
+    </div>
+  );
 }
 
 export { Input }
