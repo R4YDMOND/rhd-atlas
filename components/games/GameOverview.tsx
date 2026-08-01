@@ -5,25 +5,27 @@ import {
   Users,
 } from "lucide-react";
 
+import { guides } from "@/data/guides";
+
 const stats = [
   {
     label: "Гайды",
-    value: "—",
+    value: String(guides.length),
     icon: BookOpen,
   },
   {
     label: "Предметы",
-    value: "—",
+    value: "Скоро",
     icon: Swords,
   },
   {
     label: "Локации",
-    value: "—",
+    value: "Скоро",
     icon: Map,
   },
   {
     label: "Игроки",
-    value: "—",
+    value: "Скоро",
     icon: Users,
   },
 ];
