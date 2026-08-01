@@ -8,8 +8,6 @@ import {
   Swords,
 } from "lucide-react";
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import GameNavigation from "@/components/games/GameNavigation";
 import BuildGrid from "@/components/builds/BuildGrid";
 import { builds } from "@/data/builds";
@@ -33,11 +31,8 @@ export default function WhereWindsMeetBuildsPage() {
         );
 
   return (
-    <div className="min-h-screen bg-[#080B0D] text-[#F1EEE7]">
-      <Header />
-
-      <main>
-        <section className="border-b border-white/10 bg-[#0B1012] px-6 pb-16 pt-36 lg:px-10">
+    <>
+      <section className="border-b border-white/10 bg-[#0B1012] px-6 pb-16 pt-36 lg:px-10">
           <div className="mx-auto max-w-[1600px]">
             <Link
               href="/games/where-winds-meet"
@@ -104,9 +99,6 @@ export default function WhereWindsMeetBuildsPage() {
             <BuildGrid builds={filteredBuilds} />
           </div>
         </section>
-      </main>
-
-      <Footer />
-    </div>
+    </>
   );
 }

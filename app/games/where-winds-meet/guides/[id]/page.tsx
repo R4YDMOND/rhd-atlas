@@ -6,8 +6,6 @@ import {
   CalendarDays,
 } from "lucide-react";
 
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 import GameNavigation from "@/components/games/GameNavigation";
 import { guides } from "@/data/guides";
 
@@ -28,37 +26,28 @@ export default async function GuidePage({
 
   if (!guide) {
     return (
-      <div className="min-h-screen bg-[#080B0D] text-[#F1EEE7]">
-        <Header />
+      <main className="flex min-h-[70vh] items-center justify-center px-6">
+        <div className="text-center">
+          <h1 className="text-4xl font-semibold">
+            Гайд не найден
+          </h1>
 
-        <main className="flex min-h-[70vh] items-center justify-center px-6">
-          <div className="text-center">
-            <h1 className="text-4xl font-semibold">
-              Гайд не найден
-            </h1>
-
-            <Link
-              href="/games/where-winds-meet/guides"
-              className="mt-6 inline-flex rounded-xl bg-[#C7A56A] px-5 py-3 text-sm font-semibold text-[#080B0D]"
-            >
-              Вернуться к гайдам
-            </Link>
-          </div>
-        </main>
-
-        <Footer />
-      </div>
+          <Link
+            href="/games/where-winds-meet/guides"
+            className="mt-6 inline-flex rounded-xl bg-[#C7A56A] px-5 py-3 text-sm font-semibold text-[#080B0D]"
+          >
+            Вернуться к гайдам
+          </Link>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#080B0D] text-[#F1EEE7]">
-      <Header />
+    <>
+      <GameNavigation />
 
-      <main>
-        <GameNavigation />
-
-        <article>
+      <article>
           <section className="px-6 pb-12 pt-24 lg:px-10">
             <div className="mx-auto max-w-5xl">
               <Link
@@ -158,9 +147,6 @@ export default async function GuidePage({
             </div>
           </section>
         </article>
-      </main>
-
-      <Footer />
-    </div>
+    </>
   );
 }
