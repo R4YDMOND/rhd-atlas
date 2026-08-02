@@ -180,4 +180,149 @@ export const DEFAULT_WWM_INPUT: WwmCalculatorInput = {
   },
 };
 
+/** Пример заполненного билда — для кнопки «Пример» в калькуляторе. */
+export const EXAMPLE_WWM_INPUT: WwmCalculatorInput = {
+  panel: {
+    minExtAtk: 570,
+    maxExtAtk: 1666,
+    targetExtDef: 0,
+    ownElemAtk: 163,
+    hiddenOwnElemAtk: 150,
+    foreignElemAtk: 0,
+  },
+  skill: {
+    extMultiplier: 7.348,
+    fixedDamage: 1550,
+    ownElemMultiplier: 11.022,
+    foreignElemMultiplier: 0,
+  },
+  rates: {
+    bonusPrecision: 0.1,
+    judgmentResistance: 0,
+    critRate: 0.577,
+    affinityRate: 0.278,
+    baseCritDamage: 0.5,
+    critDamageBonus: 0,
+    baseAffinityDamage: 0.402,
+    affinityDamageBonus: 0,
+    glancingReduction: 0,
+  },
+  zones: {
+    damageBonusPercent: 0.275,
+    independentPercent: 0,
+    damageReductions: [],
+    penetration: 0,
+    resistance: 0,
+    damageDeepenPercent: 0,
+  },
+};
+
+export type StatLever = {
+  key: string;
+  label: string;
+  /** Величина малого приращения, применяемая к текущему значению стата. */
+  delta: number;
+  apply: (input: WwmCalculatorInput, delta: number) => WwmCalculatorInput;
+};
+
+/** Точки роста, которые сравниваются между собой в «Приоритете прокачки». */
+export const STAT_LEVERS: StatLever[] = [
+  {
+    key: "critRate",
+    label: "Ставка крита",
+    delta: 0.01,
+    apply: (input, d) => ({
+      ...input,
+      rates: { ...input.rates, critRate: input.rates.critRate + d },
+    }),
+  },
+  {
+    key: "affinityRate",
+    label: "Ставка affinity",
+    delta: 0.01,
+    apply: (input, d) => ({
+      ...input,
+      rates: { ...input.rates, affinityRate: input.rates.affinityRate + d },
+    }),
+  },
+  {
+    key: "critDamageBonus",
+    label: "Бонус урона крита",
+    delta: 0.01,
+    apply: (input, d) => ({
+      ...input,
+      rates: { ...input.rates, critDamageBonus: input.rates.critDamageBonus + d },
+    }),
+  },
+  {
+    key: "affinityDamageBonus",
+    label: "Бонус урона affinity",
+    delta: 0.01,
+    apply: (input, d) => ({
+      ...input,
+      rates: { ...input.rates, affinityDamageBonus: input.rates.affinityDamageBonus + d },
+    }),
+  },
+  {
+    key: "maxExtAtk",
+    label: "Макс. внешняя атака",
+    delta: 100,
+    apply: (input, d) => ({
+      ...input,
+      panel: { ...input.panel, maxExtAtk: input.panel.maxExtAtk + d },
+    }),
+  },
+  {
+    key: "ownElemAtk",
+    label: "Атака своей стихии",
+    delta: 50,
+    apply: (input, d) => ({
+      ...input,
+      panel: { ...input.panel, ownElemAtk: input.panel.ownElemAtk + d },
+    }),
+  },
+  {
+    key: "damageBonusPercent",
+    label: "Увеличение урона",
+    delta: 0.01,
+    apply: (input, d) => ({
+      ...input,
+      zones: { ...input.zones, damageBonusPercent: input.zones.damageBonusPercent + d },
+    }),
+  },
+  {
+    key: "penetration",
+    label: "Пробитие",
+    delta: 10,
+    apply: (input, d) => ({
+      ...input,
+      zones: { ...input.zones, penetration: input.zones.penetration + d },
+    }),
+  },
+];
+
+export type StatPriorityEntry = {
+  key: string;
+  label: string;
+  gainPercent: number;
+};
+
+/**
+ * Сравнивает малое приращение каждого стата и возвращает ранжированный список
+ * по приросту итогового урона — помогает решить, что качать дальше.
+ */
+export function computeStatPriority(input: WwmCalculatorInput): StatPriorityEntry[] {
+  const base = calculateWwmBuild(input).finalExpectedDamage;
+
+  if (!Number.isFinite(base) || base <= 0) return [];
+
+  const entries = STAT_LEVERS.map((lever) => {
+    const next = calculateWwmBuild(lever.apply(input, lever.delta));
+    const gainPercent = ((next.finalExpectedDamage - base) / base) * 100;
+    return { key: lever.key, label: lever.label, gainPercent };
+  });
+
+  return entries.sort((a, b) => b.gainPercent - a.gainPercent);
+}
+
 export type { DamageZones };
